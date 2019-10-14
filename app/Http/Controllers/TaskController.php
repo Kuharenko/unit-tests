@@ -11,7 +11,8 @@ class TaskController extends Controller
 
     public function __construct()
     {
-        $this->middleware('auth', ['except' => ['index','show']]);
+        $this->middleware('auth', ['except' => ['index', 'show']]);
+        $this->authorizeResource(Task::class, 'task');
     }
 
     /**
@@ -32,7 +33,7 @@ class TaskController extends Controller
      */
     public function create()
     {
-        //
+        return view('tasks.create');
     }
 
     /**
@@ -47,7 +48,7 @@ class TaskController extends Controller
         $data['user_id'] = auth()->user()->id;
         $task = Task::create($data);
 
-        return response()->json($task);
+        return redirect('/tasks/' . $task->id);
     }
 
     /**
@@ -69,7 +70,7 @@ class TaskController extends Controller
      */
     public function edit(Task $task)
     {
-        //
+        return view('tasks.edit', compact('task'));
     }
 
     /**
@@ -81,13 +82,13 @@ class TaskController extends Controller
      */
     public function update(UpdateTaskRequest $request, Task $task)
     {
-        $status = $task->update(array_merge(
+        $task->update(array_merge(
                 $request->validated(),
                 ['user_id' => auth()->user()->id]
             )
         );
 
-        return response()->json(['status' => $status]);
+        return redirect('/tasks/' . $task->id);
     }
 
     /**
@@ -96,6 +97,7 @@ class TaskController extends Controller
      * @param \App\Task $task
      * @return \Illuminate\Http\Response
      */
+
     public function destroy(Task $task)
     {
         return response()->json(['status' => $task->delete()]);

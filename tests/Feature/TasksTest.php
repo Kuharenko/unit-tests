@@ -37,6 +37,32 @@ class TasksTest extends TestCase
             ->assertSee($task->description);
     }
 
+    public function testTitleFieldIsRequiredWhenCreate()
+    {
+        $this->actingAs(factory(User::class)->create());
+
+        // Make task data without storing
+        $task = factory(Task::class)->make([
+            'title' => null
+        ]);
+
+        $this->post('/tasks', $task->toArray())
+            ->assertSessionHasErrors('title');
+    }
+
+    public function testDescriptionFieldIsRequiredWhenCreate()
+    {
+        $this->actingAs(factory(User::class)->create());
+
+        // Make task data without storing
+        $task = factory(Task::class)->make([
+            'description' => null
+        ]);
+
+        $this->post('/tasks', $task->toArray())
+            ->assertSessionHasErrors('description');
+    }
+
     public function testAuthenticatedUserCanCreateTask()
     {
 
@@ -56,6 +82,40 @@ class TasksTest extends TestCase
             'description' => $task->description,
             'user_id' => $user->id,
         ]);
+    }
+
+    public function testTitleFieldHasValidationWhenUpdate()
+    {
+        $user = factory(User::class)->create();
+        $this->actingAs($user);
+
+        // Make task data without storing
+        $task = factory(Task::class)->create([
+            'user_id' => $user->id
+        ]);
+
+        $newData = $task->toArray();
+        $newData['title'] = '';
+
+        $this->put('/tasks/' . $task->id, $newData)
+            ->assertSessionHasErrors('title');
+    }
+
+    public function testDescriptionFieldHasValidationWhenUpdate()
+    {
+        $user = factory(User::class)->create();
+        $this->actingAs($user);
+
+        // Make task data without storing
+        $task = factory(Task::class)->create([
+            'user_id' => $user->id
+        ]);
+
+        $newData = $task->toArray();
+        $newData['description'] = '';
+
+        $this->put('/tasks/' . $task->id, $newData)
+            ->assertSessionHasErrors('description');
     }
 
     public function testAuthenticatedUserCanUpdateTask()
@@ -109,5 +169,32 @@ class TasksTest extends TestCase
         $this->actingAs($user);
         $this->delete('tasks/' . $task->id);
         $this->assertDatabaseMissing('tasks', $testData);
+    }
+
+    public function testUnauthorizedUserCanNotUpdateTask()
+    {
+        $task = factory(Task::class)->create();
+        $user = factory(User::class)->create();
+
+        $this->actingAs($user);
+
+        $newData = [
+            'title' => 'Updated title',
+            'description' => 'Updated description'
+        ];
+
+        $this->put(route('tasks.update', ['task'=>$task->id]), $newData)
+        ->assertForbidden();
+    }
+
+    public function testUnauthorizedUserCanNotDeleteTask()
+    {
+        $task = factory(Task::class)->create();
+        $user = factory(User::class)->create();
+
+        $this->actingAs($user);
+
+        $this->delete(route('tasks.destroy', ['task'=>$task->id]))
+            ->assertForbidden();
     }
 }
